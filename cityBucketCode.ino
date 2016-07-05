@@ -1,19 +1,8 @@
+#include <Ethernet.h>
+#include <EthernetClient.h>
 #include <Ultrasonic.h>
 #include <Keypad.h>
 #include <LiquidCrystal.h>
-/*
- * Some functions in the LiquidCrystal library
- *  begin()
- *  clear()
- *  setCursor()
- *  print()
- *  cursor()  ||  noCursor()
- *  blink()   ||  noBlink()
- *  display() ||  noDisplay()
- *  scrollDisplayLeft() ||  scrollDisplayRight()
- *  autoscroll()  ||  noAutoscroll()
- *  leftToRight() || rightToLeft()
- */
 
 #define TRIGGER_PIN  2
 #define ECHO_PIN     3
@@ -21,6 +10,17 @@
 
 LiquidCrystal lcd(13, 12, 11, 10, 9, 8);
 Ultrasonic ultrasonic(TRIGGER_PIN, ECHO_PIN);
+
+
+//Eth variables
+
+byte mac[] = {0x90, 0xa2, 0xda, 0x0e, 0xb2,0xf0};
+//IPAddress ip(169,254,17,173);
+byte ip[] = {169,254,17,173};
+//IPAddress server(169,254,17,72);
+byte server[] = {169,254,17,72};
+EthernetClient client;
+//---------------------
 
 const byte ROWS = 4; //four rows
 const byte COLS = 4; //four columns
@@ -42,6 +42,8 @@ int count = 0;
 void setup()
 {
   Serial.begin(9600);
+  Ethernet.begin(mac, ip);
+  delay(1000);
   lcd.begin(16, 2); //Coluns=16 X rows=2
   lcd.clear();
 }
@@ -71,13 +73,21 @@ void loop()
     customKey = 'S';
   
     //Wait user insert ID
+    String cpfUser = "";
+    Serial.println("");
     while(customKey!='A')
     {
       customKey = customKeypad.getKey();
       if (customKey)
       {
          lcd.print(customKey);
-         //futuramente criar um vetor para armazenar o cpf
+         Serial.print(customKey);
+         if(customKey=='A'){
+            break; 
+         }else{
+            cpfUser += customKey;
+         }
+         
       }
     }
 
@@ -119,10 +129,13 @@ void loop()
     }
   
     //Send points to server
-    if(false)
-    {
-      //Envia informacao pro servidor
-    }
+      if (client.connect(server, 8000)) {
+          String path = "/points/" +cpfUser+ "/"+String(points) + "/";   //points/cpf/pontos
+          Serial.println("making HTTP request...");
+          client.println("POST "+ path +" HTTP/1.1");
+          client.println();
+     }
+
 
     customKey = 'S';
     lcd.clear();
